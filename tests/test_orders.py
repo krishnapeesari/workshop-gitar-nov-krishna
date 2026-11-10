@@ -1,11 +1,11 @@
 from helpers import ALICE, BOB, held_tickets, scan
 
 
-def test_place_order_charges_buyer_for_each_ticket(client, payments):
+def test_place_order_charges_buyer_for_each_ticket_plus_fees(client, payments):
     resp = client.post("/orders", json={"event_id": "evt_jazz", "quantity": 2}, headers=ALICE)
     assert resp.status_code == 201
-    assert resp.get_json()["total_cents"] == 10000
-    assert payments.charges == [("pay_1", "alice@example.com", 10000)]
+    assert resp.get_json()["total_cents"] == 10700
+    assert payments.charges == [("pay_1", "alice@example.com", 10700)]
 
 
 def test_order_requires_sign_in(client):
@@ -30,7 +30,7 @@ def test_cancel_refunds_full_total_and_voids_tickets(client, payments, alice_ord
     resp = client.post(f"/orders/{alice_order['id']}/cancel", headers=ALICE)
     assert resp.status_code == 200
     assert resp.get_json()["status"] == "cancelled"
-    assert payments.refunds == [("pay_1", 10000)]
+    assert payments.refunds == [("pay_1", 10700)]
     statuses = {t["status"] for t in held_tickets(client, ALICE)}
     assert statuses == {"void"}
 

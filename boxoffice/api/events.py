@@ -1,5 +1,6 @@
 from flask import Blueprint
 
+from boxoffice import pricing
 from boxoffice.api import store
 from boxoffice.errors import BoxofficeError
 from boxoffice.models import Event
@@ -13,7 +14,9 @@ def event_json(event: Event) -> dict:
         "name": event.name,
         "venue": event.venue,
         "starts_at": event.starts_at.isoformat(),
-        "price_cents": event.price_cents,
+        "price_cents": event.price_cents + pricing.SERVICE_FEE_CENTS,
+        "face_value_cents": event.price_cents,
+        "service_fee_cents": pricing.SERVICE_FEE_CENTS,
         "tickets_left": event.capacity - store().tickets_sold(event.id),
     }
 
