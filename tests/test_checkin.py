@@ -39,3 +39,16 @@ def test_scanning_requires_staff(client, alice_order):
     ticket = held_tickets(client, ALICE)[0]
     resp = client.post("/events/evt_jazz/scan", json={"code": ticket["qr_token"]}, headers=ALICE)
     assert resp.status_code == 403
+
+
+def test_scan_accepts_a_ticket_page_url(client, alice_order):
+    ticket = held_tickets(client, ALICE)[0]
+    resp = scan(client, ticket["ticket_url"])
+    assert resp.status_code == 200
+    assert resp.get_json()["ticket_id"] == ticket["id"]
+
+
+def test_scan_rejects_a_url_that_is_not_a_ticket_page(client, alice_order):
+    ticket = held_tickets(client, ALICE)[0]
+    resp = scan(client, "https://example.com/t/" + ticket["qr_token"])
+    assert resp.status_code == 404
