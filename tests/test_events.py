@@ -5,7 +5,8 @@ def test_lists_upcoming_events_in_date_order(client):
 
 def test_event_shows_price_fee_and_tickets_left(client, alice_order):
     event = client.get("/events/evt_jazz").get_json()
-    assert event["price_cents"] == 5000
+    assert event["price_cents"] == 5350
+    assert event["face_value_cents"] == 5000
     assert event["service_fee_cents"] == 350
     assert event["tickets_left"] == 198
 
