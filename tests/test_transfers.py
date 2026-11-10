@@ -1,3 +1,6 @@
+import pytest
+
+from boxoffice.orders import OrderError, cancel_order
 from helpers import ALICE, BOB, held_tickets, scan
 
 
@@ -58,3 +61,32 @@ def test_cannot_transfer_after_the_event_starts(client, clock, alice_order):
     clock.advance(days=40)
     resp = transfer(client, alice_order["ticket_ids"][0], "bob@example.com")
     assert resp.status_code == 409
+
+
+def test_cannot_cancel_an_order_after_a_ticket_is_transferred(
+    client, store, payments, clock, alice_order
+):
+    order_id = alice_order["id"]
+    ticket_id = alice_order["ticket_ids"][0]
+    resp = transfer(client, ticket_id, "bob@example.com")
+    assert resp.status_code == 200
+
+    order = store.orders[order_id]
+    order_before = (order.status, order.total_cents, order.payment_id)
+    tickets_before = [
+        (t.id, t.holder_email, t.status, t.qr_token, t.checked_in_at)
+        for t in store.tickets_for_order(order_id)
+    ]
+
+    with pytest.raises(OrderError) as exc:
+        cancel_order(store, payments, order_id, order.buyer_email, clock())
+
+    assert exc.value.status == 409
+    assert exc.value.message == "order has transferred tickets"
+    assert (order.status, order.total_cents, order.payment_id) == order_before
+    assert [
+        (t.id, t.holder_email, t.status, t.qr_token, t.checked_in_at)
+        for t in store.tickets_for_order(order_id)
+    ] == tickets_before
+    assert all(t.status != "void" for t in store.tickets_for_order(order_id))
+    assert payments.refunds == []

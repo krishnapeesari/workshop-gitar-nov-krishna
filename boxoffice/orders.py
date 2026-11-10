@@ -52,7 +52,7 @@ def cancel_order(store: Store, payments: FakePayments, order_id: str, buyer_emai
     """Cancel a paid order before its event starts.
 
     Refunds the buyer the full order total and voids every ticket on the order.
-    Orders with a checked-in ticket can't be cancelled.
+    Orders with a checked-in or transferred ticket can't be cancelled.
     """
     order = store.orders.get(order_id)
     if order is None or order.buyer_email != buyer_email:
@@ -64,6 +64,8 @@ def cancel_order(store: Store, payments: FakePayments, order_id: str, buyer_emai
     tickets = store.tickets_for_order(order.id)
     if any(t.checked_in_at is not None for t in tickets):
         raise OrderError("order has checked-in tickets", 409)
+    if any(t.holder_email != order.buyer_email for t in tickets):
+        raise OrderError("order has transferred tickets", 409)
 
     payments.refund(order.payment_id, order.total_cents)
     for ticket in tickets:
