@@ -24,5 +24,7 @@ def resolve_ticket(store: Store, code: str, event_id: str) -> Ticket:
 def scan(store: Store, code: str, event_id: str, now: datetime) -> Ticket:
     """Admit the ticket behind a code scanned at a gate for `event_id`."""
     ticket = resolve_ticket(store, code, event_id)
+    if ticket.checked_in_at is not None:
+        raise CheckinError("ticket already checked in", 409)
     ticket.checked_in_at = now
     return ticket
